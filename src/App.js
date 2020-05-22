@@ -35,10 +35,29 @@ class App extends Component{
       imageUrl:'',
       box: {},
       route : 'signin',
-      isSignedIn: false 
+      isSignedIn: false,
+      user: {
+      id : '',
+			name: '',
+			email: '',
+			password: '',
+			entries:'',
+      joined : ''
+      }
     }
    
   }
+
+  loudUser =(data)=>
+      this.setState({user:{
+    	id : data.user,
+			name: data.name,
+			email: data.email,
+			entries:data.entries,
+			joined : data.joined
+
+}})
+
   onRouteChange =(route)=>{
     
     if (route==='signout') {
@@ -70,12 +89,30 @@ class App extends Component{
      this.setState({box});
 
    }
-  onSubmit =() =>{
+   onSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input )
-    .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
-    .catch(err => console.log(err));
+    app.models
+      .predict(
+        Clarifai.FACE_DETECT_MODEL,
+        this.state.input)
+      .then(response => {
+        if (response) {
+          fetch('http://localhost:3000/image', {
+            method: 'put',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              id: this.state.user.id
+            })
+          })
+            .then(response => response.json())
+            .then(count => {
+              this.setState(Object.assign(this.state.user, { entries: count}))
+            })
 
+        }
+        this.displayFaceBox(this.calculateFaceLocation(response))
+      })
+      .catch(err => console.log(err));
   }
   render(){
       return (
@@ -95,7 +132,7 @@ class App extends Component{
       : (
         this.state.route === 'signin' 
         ? <Siginin onRouteChange ={this.onRouteChange} />
-      : <Register onRouteChange={this.onRouteChange}/>
+      : <Register loudUser={this.loudUser} onRouteChange={this.onRouteChange}/>
       )
    
      
